@@ -31,14 +31,10 @@ class TimeAgo extends Widget
      */
     public $options;
     /**
-     * @var bool
-     */
-    public $localTitle = false;
-    /**
      * @var string
      * @see https://github.com/rmm5t/jquery-timeago/tree/master/locales
      */
-    public $language;
+    public $language = 'en';
     /**
      * @var integer Unix timestamp
      */
@@ -49,21 +45,18 @@ class TimeAgo extends Widget
 
     public function init()
     {
-        if ($this->language === null) $this->language = substr(\Yii::$app->language,0,2);
         $this->options['data-toggle'] = ArrayHelper::getValue($this->options, 'data-toggle', 'timeago');
         $this->registerLocale();
-        if($this->localTitle) {
-            $this->getView()->registerJs("jQuery.timeago.settings.localeTitle = true", 4, 'timeagoSetting');
-        }
         $this->getView()->registerJs("jQuery('{$this->tag}[data-toggle=\"{$this->options['data-toggle']}\"]').timeago();", 4, 'timeago');
     }
 
     protected function registerLocale()
     {
-        if (file_exists(Yii::getAlias($this->getAssetBundle()->sourcePath) . DIRECTORY_SEPARATOR . "locales" . DIRECTORY_SEPARATOR . "jquery.timeago.{$this->language}.js")) {
-            $this->getAssetBundle()->js[] = "locales/jquery.timeago.{$this->language}.js";
+        $lang = $this->prepareLang();
+        if (file_exists(Yii::getAlias($this->getAssetBundle()->sourcePath) . DIRECTORY_SEPARATOR . "locales" . DIRECTORY_SEPARATOR . "jquery.timeago.{$lang}.js")) {
+            $this->getAssetBundle()->js[] = "locales/jquery.timeago.{$lang}.js";
         } else {
-            throw new InvalidConfigException("Language '{$this->language}' do not exist.");
+            throw new InvalidConfigException("Language '{$lang}' do not exist.");
         }
     }
 
@@ -86,11 +79,17 @@ class TimeAgo extends Widget
     public function run()
     {
         if ($this->timestamp) {
-            return Html::tag(
-                $this->tag,
-                '',
-                ArrayHelper::merge($this->options, ['datetime' => Yii::$app->formatter->asDatetime($this->timestamp, "php:c")])
-            );
+            echo Html::tag($this->tag, Yii::$app->formatter->asDatetime($this->timestamp), ArrayHelper::merge($this->options, ['datetime' => Yii::$app->formatter->asDatetime($this->timestamp, "php:c")]));
         }
     }
+
+    protected function prepareLang()
+    {
+        $lang = $this->language;
+        if (strpos($lang, '-') !== false) {
+            $lang = strtolower(explode('-', $lang)[0]);
+        }
+        return $lang;
+    }
+
 }
